@@ -95,6 +95,8 @@ def createSheet(imageFiles, size, spriteSize = 32, compactMode = True):
                 else:
                     sheet.paste(im, (spriteSize * row, spriteSize * column))
                     row, column = setRowColumn(row, column, size)
+        if verbose:
+            print("     Sprite sheet created.")
     else:
         pass
     sheet.show()
