@@ -185,4 +185,5 @@ def main():
         print('     Sprite sheet saved to "' + output + '".\n')
 
 main()
-print("Done!")
+if verbose:
+    print("Done!")
