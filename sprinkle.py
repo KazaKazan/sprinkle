@@ -30,42 +30,202 @@ def getImages():
     else:
         sys.exit("      No image files found! Exiting...\n")
 
-def calculateSetSize(imageFiles, spriteSize, compactMode):
+class Tile:
+    def __init__(self, name, path, spriteSize) -> None:
+        self.name = name
+        self.path = path
+        self.image = Image.open(path)
+        self.height = math.ceil(self.image.size[1] / spriteSize)
+        self.width = math.ceil(self.image.size[0] / spriteSize)
+        self.placed = False
+        self.location = (0,0)
+
+class Sheet: 
+    def __init__(self, spriteSize) -> None:
+        self.spriteSize = spriteSize
+        self.height = 0
+        self.width = 0
+        self.rows = []
+        self.unplaced = []
+        self.placed = []
+
+    def createInitialSheet(self, height, width):
+        self.height = height
+        self.width = width
+        for i in range(self.height):
+            self.addRow(True)
+                
+    def setup(self, forceSquare):
+        global verbose
+        if verbose:
+            print("Optimizing sprite sheet...")
+            print("     Creating the initial bounding box.")
+
+        self.unplaced.sort(key=lambda x: x.height)
+        firstTile = self.unplaced[-1]
+        self.createInitialSheet(firstTile.height, firstTile.width)
+        self.placeTile(firstTile)
+
+        self.unplaced.sort(key=lambda x: x.width)
+        secondTile = self.unplaced[-1]
+        self.placeTile(secondTile)
+
+        if verbose:
+            print("     Finding optimal layout.")
+
+        self.unplaced.sort(key=lambda x: x.height)
+        while len(self.unplaced) > 0:
+            tile = self.unplaced[-1]
+            self.placeTile(tile)
+
+        
+        if verbose:
+            print("     Creating sprite sheet canvas.")
+
+        box = (self.width * self.spriteSize, self.height * self.spriteSize)
+        if forceSquare:
+            if verbose:
+                print("     Forcing square sprite sheet.")
+            longSide = self.width
+            if self.height > self.width:
+                longSide = self.height
+            box = (longSide * self.spriteSize, longSide * self.spriteSize)
+        sheet = Image.new("RGBA", box)
+
+        if verbose:
+            print("     Placing sprites onto the sprite sheet.")
+
+        for tile in self.placed:
+            sheet.paste(tile.image, (tile.location[1]*self.spriteSize,tile.location[0]*self.spriteSize))
+        
+        if verbose:
+            print("     Sprite sheet created.\n")
+        
+        return sheet
+
+
+    def createTiles(self, imageFiles):
+        for i in range(len(imageFiles)):
+            newTile = Tile(str(i), imageFiles[i], self.spriteSize)
+            self.unplaced.append(newTile)
+
+    def checkNext(self, row, column):
+        try:
+            if self.rows[row][column] == [0]:
+                return True
+            else:
+                return False
+        except IndexError:
+            return False
+
+    def findArea(self, height, width):
+        for row in range(len(self.rows)):
+            for column in range(len(self.rows[row])):
+                if self.rows[row][column] == [0]:
+                    rowIndex = row
+                    columnIndex = column
+                    isFree = True
+                    for y in range(height):
+                        columnIndex = column
+                        for x in range(width):
+                            isFree = self.checkNext(rowIndex, columnIndex)
+                            if not isFree:
+                                if columnIndex == column:
+                                    return (-1,0)
+                                else:
+                                    return (0,-1)
+                            columnIndex += 1
+                        rowIndex += 1
+                    return (row, column)
+        return (-1,-1)
+
+    def populateTiles(self, tile):
+        row = tile.location[0]
+        column = tile.location[1]
+        for y in range(tile.height):
+            column = tile.location[1]
+            for x in range(tile.width):
+                self.rows[row][column] = [1]
+                column += 1
+            row += 1
+
+    def placeTile(self, tile):
+        location = self.findArea(tile.height, tile.width)
+        if location[0] >= 0 and location[1] >= 0:
+            self.unplaced.remove(tile)
+            self.placed.append(tile)
+            tile.location = location
+            self.populateTiles(tile)
+            return True
+        elif location != (-1,-1):
+            if location[0] < 0:
+                self.addRow()
+            else:
+                self.addColumn()
+            self.placeTile(tile)
+        else:
+            self.addRow()
+            self.addColumn()
+            self.placeTile(tile)
+        return False
+
+    def addRow(self, initialSetup = False):
+        newRow = []
+        for i in range(self.width):
+            newRow.append([0])
+        self.rows.append(newRow)
+        if not initialSetup:
+            self.height += 1
+
+    def addColumn(self):
+        for row in self.rows:
+            row.append([0])
+        self.width += 1
+    
+    def printBoard(self):
+        print("\nPrinting Board")
+        for row in self.rows:
+            print(row)
+
+def calculateSetSize(imageFiles, spriteSize, forceSquare):
     if verbose:
         print("Calculating sprite sheet size...")
-        print("     Compact mode is set to " + str(compactMode) + ".")
+        print("     Square forcing is set to " + str(forceSquare))
     sheetSize = 0
-    if compactMode:
-        tileCount = 0
-        for image in imageFiles:
-            with Image.open(image) as im:
-                tileCount += math.ceil(im.size[0] / spriteSize)
-                tileCount += math.ceil(im.size[1] / spriteSize)
-        sheetSize = math.ceil(math.sqrt(tileCount))
-    else:
-        pass
+    tileCount = 0
+    for image in imageFiles:
+        with Image.open(image) as im:
+            tileCount += math.ceil(im.size[0] / spriteSize)
+            tileCount += math.ceil(im.size[1] / spriteSize)
+    sheetSize = math.ceil(math.sqrt(tileCount))
+    sheetSize = (sheetSize, sheetSize)
+    if not forceSquare:
+        sheetSize = (sheetSize[0], int(tileCount / sheetSize[0]))
     if verbose:
-        print("     Sprite sheet size calculated as " + str(sheetSize) + "x" + str(sheetSize) + ".\n")
+        print("     Sprite sheet size calculated as " + str(sheetSize[0]*spriteSize) + "x" + str(sheetSize[1]*spriteSize) + ".")
     return sheetSize
 
 def setRowColumn(cRow, cColumn, size):
     row = cRow
     column = cColumn
-    if cRow + 1 == size:
+    if cRow + 1 == size[0]:
         row = 0
         column += 1
     else:
         row += 1
     return row, column
 
-def createSheet(imageFiles, spriteSize, compactMode):
-    size = calculateSetSize(imageFiles, spriteSize, compactMode)
+def createSheet(imageFiles, spriteSize, compactMode, forceSquare):
+
     if verbose:
         print("Creating sprite sheet...")
-    sheet = Image.new("RGBA", (size * spriteSize, size * spriteSize))
-    if verbose:
-        print("     Placing sprites onto the sprite sheet.")
+        print("     Compact mode is set to " + str(compactMode) + ".\n")
+    
     if compactMode:
+        size = calculateSetSize(imageFiles, spriteSize, forceSquare)
+        if verbose:
+            print("     Placing sprites onto the sprite sheet.")
+        sheet = Image.new("RGBA", (size[0] * spriteSize, size[1] * spriteSize))
         row = 0
         column = 0
         for i in range(len(imageFiles)):
@@ -100,7 +260,10 @@ def createSheet(imageFiles, spriteSize, compactMode):
         if verbose:
             print("     Sprite sheet created.\n")
     else:
-        pass
+        sheet = Sheet(spriteSize)
+        sheet.createTiles(imageFiles)
+        sheet = sheet.setup(forceSquare)
+
     return sheet
 
 def usage():
@@ -115,6 +278,7 @@ def usage():
         "\nOPTIONS\n\n"
         "-v, --verbose      Set verbose mode on.\n"
         "-h, --help         Show this message.\n"
+        "-s, --square       Force square sprite sheet.\n"
         "\nARGUMENTS\n\n"
         "Name               Format/Options              Default\n"
         "------------------------------------------------------\n"
@@ -138,15 +302,19 @@ def main():
     spSize = 32
     output = "sheet.png"
     coMode = True
+    square = False
 
     if len(args) != 0:
         for argument in args:
             if argument == "compact":
                 coMode = True
             elif argument == "intact":
-                print("Intact mode is still in development. Mode is set to compact instead.\n")
+                #print("Intact mode is still in development. Mode is set to compact instead.\n")
+                coMode = False
             elif argument == "--verbose" or argument == "-v":
                 verbose = True
+            elif argument == "--square" or argument == "-s":
+                square = True
             else:
                 argumentCheck = argument.split(".")
                 try:
@@ -160,7 +328,7 @@ def main():
                         sys.exit(message)
 
     imList = getImages()
-    newSheet = createSheet(imList, spSize, coMode)
+    newSheet = createSheet(imList, spSize, coMode, square)
 
     if verbose:
         print("Checking if output dir exists...")
