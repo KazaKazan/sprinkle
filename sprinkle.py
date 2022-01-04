@@ -295,6 +295,27 @@ def main():
 
     if "--help" in sys.argv or "-h" in sys.argv:
         usage()
+    
+    if "--test" in sys.argv:
+        outputExists = os.path.isdir("output")
+        if not outputExists:
+            os.makedirs("output")
+
+        imList = getImages()
+        
+        newSheet = createSheet(imList, 32, True, False)
+        newSheet.save("output/compact.png")
+        
+        newSheet = createSheet(imList, 32, True, True)
+        newSheet.save("output/compactSquare.png")
+        
+        newSheet = createSheet(imList, 32, False, False)
+        newSheet.save("output/intact.png")
+        
+        newSheet = createSheet(imList, 32, False, True)
+        newSheet.save("output/intactSquare.png")
+
+        sys.exit("Test complete.")
 
     args = sys.argv
     args.pop(0)
@@ -309,7 +330,6 @@ def main():
             if argument == "compact":
                 coMode = True
             elif argument == "intact":
-                #print("Intact mode is still in development. Mode is set to compact instead.\n")
                 coMode = False
             elif argument == "--verbose" or argument == "-v":
                 verbose = True
