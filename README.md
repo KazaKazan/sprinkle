@@ -33,18 +33,18 @@ Arguments and options can be in any order, and they are all optional. If an argu
 
 As of this version the options are as follows:
 <ul>
-    <li>`-v` or `--verbose`: Sets verbose mode to True.</li>
-    <li>`-h` or `--help`: Displays the help message and exits the script. This option will override any other option.</li>
-    <li>`-s` or `--square`: Forces the script to produce sprite sheets with 1/1 aspect ratio.</li>
+    <li><code>-v</code> or <code>--verbose</code>: Sets verbose mode to <code>True</code>.</li>
+    <li><code>-h</code> or <code>--help</code>: Displays the help message and exits the script. This option will override any other option.</li>
+    <li><code>-s</code> or <code>--square</code>: Forces the script to produce sprite sheets with 1/1 aspect ratio.</li>
 </ul>
 
 <h3> Arguments </h3>
 
 As of this version the arguments are as follows:
 <ul>
-    <li><b>Sprite Sheet Mode:</b> `compact` or `intact`. In compact mode sprites larger than the sprite size provided will be sliced into smaller sprites of the sprite size provided. In intact mode, the sprites will be placed onto the sprite sheet as they are, which results in a more human readable but possibly larger sprite sheet. The default value is `compact`.</li>
-    <li><b>Sprite Size:</b> A single integer representing the one side of the smallest sprite in the sprite sheet in pixels. The default value is `32`, which represents a 32x32px sprite.</li>
-    <li><b>Output File:</b> The filename and the format of the resulting sprite sheet. The argument format is `<filename>.<format>`. The accepted formats are the same as <a href="https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html">Pillow</a>. The default value is `sheet.png`.</li>
+    <li><b>Sprite Sheet Mode:</b> <code>compact</code> or <code>intact</code>. In compact mode sprites larger than the sprite size provided will be sliced into smaller sprites of the sprite size provided. In intact mode, the sprites will be placed onto the sprite sheet as they are, which results in a more human readable but possibly larger sprite sheet. The default value is <code>compact</code>.</li>
+    <li><b>Sprite Size:</b> A single integer representing the one side of the smallest sprite in the sprite sheet in pixels. The default value is <code>32</code>, which represents a 32x32px sprite.</li>
+    <li><b>Output File:</b> The filename and the format of the resulting sprite sheet. The argument format is <code>"filename"."format"</code>. The accepted formats are the same as <a href="https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html">Pillow</a>. The default value is <code>sheet.png</code>.</li>
 </ul>
 
 When called, the script will create a directory called `output` and put the resulting sprite sheet into this directory.
